@@ -1,0 +1,70 @@
+Для работы с git в VSCode необходимо добавить терминал bash:
+1 F1->Open User Settings->Терминал->Изменить параметры в settings.json и добавить строчку
+"terminal.integrated.shell.windows": "E:\\Programs\\Git\\bin\\bash.exe"
+Перезагрузить и появится терминал bash. Но при установке git на Windows можно выбрать опцию,
+при которой bash будет встроен в cmd/PowerShell. Поэтому работать с Golang и git можно в одном
+терминале PowerShell
+
+
+Загрузка проекта на github:
+1 В терминале выбираем директорию проекта (cd D:\project)
+2 Инициализация/создание репозитория
+  git init
+3 git status
+4 Добавим все файлы проекта в нам будующий commit
+  git add .
+  либо git add <имя_файла>
+5 Теперь создаем commit. Обязательно указываем комментарий.
+  git commit -m "<комментарий>"
+6 Push существующего репозитория на GitHub - Создание нового подключения к удаленному репозиторию под меткой origin
+  git remote add origin https://github.com/vitalg93/mysite.git
+7 В этом примере состояние локальной ветки ＜branch-name＞ передается в удаленный репозиторий, обозначенный как ＜remote-name＞ 
+  git push <remote-name> <branch-name>
+  Выполнив команду git push -u origin main вы устанавливаете связь между той веткой,
+  в которой вы находитесь и веткой main на удалённом сервере. Команду требуется выполнить 
+  единожды, чтобы потом можно было отправлять/принимать изменения лишь выполняя git push
+  из ветки без указания всяких алиасов для сервера и удалённых веток. 
+  git push -u origin main
+
+
+Для существующего проекта загрузка на ПК 
+git clone https://github.com/libgit2/libgit2
+
+
+После установки производим настройку своего профиля вводя в терминал поочереди команды: 
+
+git config --global user.name "ВАШЕ_ИМЯ"
+git config --global user.email "email@mail.ru"
+
+После указания своих данных, можно их просмотреть:
+git config --global --list
+
+Далее убедитесь, что ваш репозиторий установлен, запустив
+git remote -v
+
+Иначе подключите с помощью
+git remote add origin ssh://git@example.com:1234/myRepo.git
+
+Копировать или клонировать репу c GitHub можно по HTTPS или SSH.
+git clone ССЫЛКА_НА_РЕПОЗИТОРИЙ
+
+После клонирования переходим в папку репозитория:
+cd НАЗВАНИЕ_РЕПОЗИТОРИЯ 
+
+Смотрим статус
+git status
+
+Добавляем файл в репозиторий:
+git add example.txt
+
+Коммитим:
+git commit -m "This first example text file"
+
+Пушим
+git push origin master
+
+Отправить данные в репу можно используя команду git push:
+git push origin master
+
+To set main as the default branch name do:
+git config --global init.defaultBranch main
