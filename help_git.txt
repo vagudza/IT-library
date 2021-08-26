@@ -18,13 +18,19 @@
   git commit -m "<комментарий>"
 6 Push существующего репозитория на GitHub - Создание нового подключения к удаленному репозиторию под меткой origin
   git remote add origin https://github.com/vitalg93/mysite.git
-7 В этом примере состояние локальной ветки ＜branch-name＞ передается в удаленный репозиторий, обозначенный как ＜remote-name＞ 
+7 GitHub рекомендует переименовать локальную главную ветку на main чтобы соответствовать GitHub и не вызывать конфликты
+  git branch -M main
+8 В этом примере состояние локальной ветки ＜branch-name＞ передается в удаленный репозиторий, обозначенный как ＜remote-name＞ 
   git push <remote-name> <branch-name>
   Выполнив команду git push -u origin main вы устанавливаете связь между той веткой,
   в которой вы находитесь и веткой main на удалённом сервере. Команду требуется выполнить 
   единожды, чтобы потом можно было отправлять/принимать изменения лишь выполняя git push
   из ветки без указания всяких алиасов для сервера и удалённых веток. 
   git push -u origin main
+8.1 Если п.8 не сработает -  ! [rejected]        main -> main (non-fast-forward) 
+    error: failed to push some refs to 'https://github.com/vitalg93/my_site.git'
+    то см. п.9
+9 git push origin +HEAD
 
 
 Для существующего проекта загрузка на ПК 

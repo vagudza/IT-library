@@ -1,4 +1,4 @@
-// HTML modules help:
+// HTML modules guide:
 <!-- 
     {{ if gt .Var 10 }}      |    if Obj.Var>10
     ...
