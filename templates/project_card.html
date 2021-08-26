@@ -1,13 +1,15 @@
 {{ define "project_card"}}
 <div class="col">
     <div class="card shadow-sm">
-        <img src="static/img/{{ .Thumbnail }}" class="card-img-top img-thumbnail" alt="...">
+        <a href="/project/{{ .Id }}">
+            <img src="/static/img/{{ .Thumbnail }}" class="card-img-top img-thumbnail" alt="...">
+        </a>
 
         <div class="card-body">
-            <p class="card-text">{{ .Description }}</p>
+            <p class="card-text">{{ .Title }}</p>
             <div class="d-flex justify-content-between align-items-center">
                 <div class="btn-group">
-                    <button type="button" class="btn btn-sm btn-outline-secondary">View</button>
+                    <a class="btn btn-primary" href="/project/{{ .Id }}" role="button">View</a>
                     <button type="button" class="btn btn-sm btn-outline-secondary">Edit</button>
                 </div>
                 <small class="text-muted">{{ .Readtime }} mins</small>

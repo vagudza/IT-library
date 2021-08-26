@@ -19,12 +19,13 @@ var sqlString = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", dbUser, dbPassword, dbIp, dbP
 
 type Project struct {
 	Id          int
+	Title       string
 	Thumbnail   string
 	Description string
 	Readtime    int
 }
 
-// Выбор из БД описание проекта с заданным id
+// Выбор из БД описания проекта с заданным id
 func DBGetProjectByID(projectID string) Project {
 	db, err := sql.Open(dbDriverName, sqlString)
 	if err != nil {
@@ -34,10 +35,10 @@ func DBGetProjectByID(projectID string) Project {
 	// defer - отложенная функция
 	// гарантия, что подключение к базе данных будет закрыто в любом случае вне зависимости от точек выхода из функции
 	defer db.Close()
-	fmt.Println("Connected to DB")
+	fmt.Println("Connected to DB - DBGetProjectByID")
 
 	// выборка трех последних записей
-	rows, err := db.Query(fmt.Sprintf("SELECT `id`, `thumbnail`, `description`, `readtime` FROM projects WHERE `id`= %s", projectID))
+	rows, err := db.Query(fmt.Sprintf("SELECT `id`, `title`, `thumbnail`, `description`, `readtime` FROM projects WHERE `id`= %s", projectID))
 	if err != nil {
 		panic(err)
 	}
@@ -45,7 +46,7 @@ func DBGetProjectByID(projectID string) Project {
 	var p Project
 	for rows.Next() {
 		// Scan проверяет, существует ли значение. Заполняем
-		err := rows.Scan(&p.Id, &p.Thumbnail, &p.Description, &p.Readtime)
+		err := rows.Scan(&p.Id, &p.Title, &p.Thumbnail, &p.Description, &p.Readtime)
 		if err != nil {
 			panic(err)
 		}
@@ -63,10 +64,10 @@ func DBGetProjects() []Project {
 	// defer - отложенная функция
 	// гарантия, что подключение к базе данных будет закрыто в любом случае вне зависимости от точек выхода из функции
 	defer db.Close()
-	fmt.Println("Connected to DB")
+	fmt.Println("Connected to DB - DBGetProjects")
 
 	// выборка трех последних записей
-	rows, err := db.Query("SELECT `id`, `thumbnail`, `description`, `readtime` FROM projects ORDER BY id DESC LIMIT 3")
+	rows, err := db.Query("SELECT `id`, `title`, `thumbnail`, `description`, `readtime` FROM projects ORDER BY id DESC LIMIT 3")
 	if err != nil {
 		panic(err)
 	}
@@ -76,7 +77,7 @@ func DBGetProjects() []Project {
 	for rows.Next() {
 		var p Project
 		// Scan проверяет, существует ли значение. Заполняем
-		err := rows.Scan(&p.Id, &p.Thumbnail, &p.Description, &p.Readtime)
+		err := rows.Scan(&p.Id, &p.Title, &p.Thumbnail, &p.Description, &p.Readtime)
 		if err != nil {
 			panic(err)
 		}

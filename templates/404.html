@@ -1,0 +1,19 @@
+{{ define "404" }}
+{{ template "header" }}
+<div class="px-4 py-5 my-5 text-center">
+    <img class="d-block mx-auto mb-4" src="/static/img/404.gif" alt="" width="300" height="300">
+    <h1 class="display-5 fw-bold">404</h1>
+    <div class="col-lg-6 mx-auto">
+        <p class="lead mb-4">Page not found</p>
+        <div class="btn-group">
+            <a class="btn btn-primary" href="/" role="button">Back to main page</a>
+        </div>
+        <!--
+        <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+            <button type="button" class="btn btn-primary btn-lg px-4 gap-3">Primary button</button>
+        </div>
+        -->
+    </div>
+</div>
+{{ template "footer" }}
+{{ end }}
