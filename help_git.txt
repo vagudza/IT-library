@@ -17,7 +17,7 @@
 5 Теперь создаем commit. Обязательно указываем комментарий.
   git commit -m "<комментарий>"
 6 Push существующего репозитория на GitHub - Создание нового подключения к удаленному репозиторию под меткой origin
-  git remote add origin https://github.com/vitalg93/mysite.git
+  git remote add origin https://github.com/vitalg93/mysite.git 
 7 GitHub рекомендует переименовать локальную главную ветку на main чтобы соответствовать GitHub и не вызывать конфликты
   git branch -M main
 8 В этом примере состояние локальной ветки ＜branch-name＞ передается в удаленный репозиторий, обозначенный как ＜remote-name＞ 
@@ -81,6 +81,9 @@ git diff <исходная_ветка> <целевая_ветка>
 Удалить ненужную ветку:
 git branch -d <название_ветки>
 
+Список веток:
+git branch -r
+
 Просмотр историю ветки:
 git log
 
@@ -92,3 +95,125 @@ git help <название_команды>
 
 # Например clone
 git help clone
+
+# Удаление из отслеживания 
+git rm --cached <file>
+
+# origin адрес репозитория:
+git remote -v
+
+
+
+// Как работать в ветке (локально) определенной ветки с сервера?
+Для того, чтобы сделать ещё одну отслеживаемую ветку - переключитесь на удалённую 
+и выполните создание локальной ветки. Всё это можно сделать одной командой:
+
+git checkout --track -b local_branch_name origin/remote_branch_name
+
+Где local_branch_name - имя создаваемой ветки, origin/remote_branch_name - полное имя удалённой ветки;
+local_branch_name для удобства можно назвать одинаково с remote_branch_name.
+После выполнения команды у вас появится ветка local_branch_name, которая будет отслеживать ветку remote_branch_name на сервере.
+
+
+ответвиться от отслеживаемой ветки
+git checkout -b feature/templates-gudza
+
+
+
+Если на github добавил вручную readme.md, а проект собрал в VSCode и подключил к удаленном репозиторию,
+то для заливки на github нужно решить конфликт версий (если git push -u origin main не работает)
+# — забирает изменения удаленной ветки из репозитория по умолчания, основной ветки; 
+#той, которая была использована при клонировании репозитория.
+git fetch
+git rebase origin/master
+
+или 
+git pull --rebase
+
+
+Это так, поскольку
+https://stackoverflow.com/questions/7200614/how-to-merge-remote-master-to-local-branch
+    git merge branchname - takes new commits from the branch branchname, and adds them to the current branch. If necessary, it automatically adds a "Merge" commit on top.
+
+    git rebase branchname - takes new commits from the branch branchname, and inserts them "under" your changes. More precisely, it modifies the history of the current branch such that it is based on the tip of branchname, with any changes you made on top of that.
+
+    git pull is basically the same as git fetch; git merge origin/master.
+
+    git pull --rebase is basically the same as git fetch; git rebase origin/master.
+
+
+
+
+// Как удалить любую папку, в т.ч. и .idea, и лишние файлы из Git
+      Создаем файл .gitignore в корне репозитария с содержимым:
+
+      .idea
+      logs/
+
+      ------------------------------------------------------------------
+      Подробнее можно ознакомиться на странице: https://git-scm.com/book/ru/v1/Основы-Git-Запись-изменений-в-репозиторий
+      Удаляем ненужные папки и файлы при синхронизации в Git репозиторий
+
+      Удалим все проиндексированные файлы:
+
+      git rm -r -f --cached .
+
+      Запустим индексацию заново:
+
+      git add .
+
+      Добавляем коммит и пушим:
+
+      git commit -m "Remove files"
+      git push -u origin master
+
+
+      -----------------------------------------------------------------------------------
+      # Игнор-лист файлов проекта
+      # Игнорировать ВСЕ файлы и директории, включая поддиректории и файлы в них
+      *
+      # ---- ФАЙЛЫ ----
+      # Игнорирование по типу файла, будут игнорироваться в АБСОЛЮТНО всех директориях
+      # Например /files/data.zip, /server.log, /uploads/users/data/info.xls
+      *.zip
+      *.log
+      *.pdf
+      *.xls
+      # Игнорирование файла во ВСЕХ директориях
+      # Например /params/db/config.php, /config.php
+      config.php
+      # Игнорирование конкретного файла ТОЛЬКО в корне проекта
+      # (корнём считается расположение файла .gitignore)
+      # Например НЕ БУДЕТ проигнорирован файл /db/config.php
+      /config.php
+      # Игнорирование конкретного файла ТОЛЬКО в указанной директории
+      # Например НЕ БУДЕТ проигнорирован файл /prod/params/config.php
+      /params/config.php
+      # ---- ДИРЕКТОРИИ ----
+      # Игнорирование всех файлов и папок ТОЛЬКО в конкретной директории(включая поддиректории и файлы в них)
+      # Например /images/user.jpg, /images/company/logo.png
+      # НЕ БУДУТ проигнорированы файлы и папки /prod/images/user.jpg
+      /images/*
+      # Игнорирование всех файлов и папок в ЛЮБЫХ директориях с указанным именем
+      # Например /images/user.jpg, /core/images/user.jpg
+      images/*
+      # Игнорирование ВСЕХ html-файлов в ОДНОЙ КОНКРЕТНОЙ директории(НЕ ВКЛЮЧАЯ поддиректории)
+      # Например /private/index.html
+      # НЕ БУДУТ проигнорированы файлы в /private/ivan/index.html
+      /private/*.html
+      # Игнорирование ВСЕХ html-файлов в КОНКРЕТНОЙ директории ВКЛЮЧАЯ поддиректории
+      # Например /private/info.html, /private/users/ivan/info.html
+      /private/**/*.html
+      # ---- РАЗНОЕ ----
+      # Исключение из игнорирования
+      # Игнорирование ВСЕХ файлов и папок внутри директории /secret,
+      # за исключением файла /secret/free.txt, он не будет проигнорирован
+      /secret/*
+      !/secret/free.txt
+      # Игнорирование файла с именем, содержащим спецсимволы
+      # Например !readme!.txt
+      \!readme!.txt
+      # Игнорирование всех JPG и JPEG файлов внутри директорий,
+      # которые начинаются на "h" и МОГУТ содержать ещё один символ после
+      # Например /images/h4/user.jpg, /images/h/company.jpeg
+      /images/h?/*.jp?g
