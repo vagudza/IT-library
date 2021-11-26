@@ -115,8 +115,51 @@ local_branch_name для удобства можно назвать одинак
 После выполнения команды у вас появится ветка local_branch_name, которая будет отслеживать ветку remote_branch_name на сервере.
 
 
-ответвиться от отслеживаемой ветки
-git checkout -b feature/templates-gudza
+
+ответвиться от отслеживаемой ветки (пусть отслеживаемая - feature/mongo)
+git checkout -b feature/mongo-gudza
+
+запушить после ответвления локальную ветку (появится новая ветка на гитлабе)
+
+Переименовать ветку (git branch -m feature/oldname):
+git branch -m feature/postgres
+
+за время работы в ветке, от которой ответвились, произошли изменения, и их нужно слить
+    -для этого смотрим список локальных веток
+      git branch
+
+        * feature/mongo-gudza
+          main
+    -загрузим информацию о ветке, с которой будем сливаться:
+      git fetch origin feature/mongo
+    - переходим в сливаемую ветку. -m флаг означает, что будем merge
+      git checkout -m feature/mongo      // после чего в Gitlab появится запись в ветке (feature/mongo)
+
+          // "Merge remote-tracking branch 'origin/swagger-gudza' into feature/mongo" - т.е. смерджили. 
+
+      //? git checkout -m feature/mongo-gudza
+
+      Switched to branch 'feature/mongo-gudza'
+      Your branch and 'origin/feature/mongo' have diverged,
+      and have 1 and 1 different commits each, respectively.
+        (use "git pull" to merge the remote branch into yours)
+
+      git pull
+      git merge feature/mongo
+        Already up to date. 
+
+
+для того, чтобы смерджить в ветку (develop) - необходимо переключиться на нее и подтянуть обновления
+git checkout --track -b develop origin/develop
+git pull
+
+сливаем ветку feature/mongo-gudza в develop (находясь в *develop)
+git merge feature/mongo-gudza
+
+не забудь запушить после мерджа
+
+
+
 
 
 

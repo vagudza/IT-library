@@ -1,0 +1,159 @@
+docker: 
+основная задача запустить приложение.
+Контейнер работатет до тех пор, пока работает приложение
+
+
+Dockerfile
+
+FROM python:3.6                 # определяем образ, в котором должен быть питон с версией 3.6
+                                # начинаем сборку с образа с питоном с нужной версией
+
+RUN mkdir -p /usr/src/app/      # выполнение команды
+    pip install --no-cache-dir -r requirements.txt          # установка зависимостей, указанных в txt файле (flask==1.1)
+WORKDIR /usr/src/app/           # рабочая директория - все скрипты будут запущены отсюда
+
+COPY . /usr/src/app/            # копирует содержимое из локальной машины с корня в указанную папку
+
+EXPOSE 8080                     # декларация проброски порта
+
+ENV TZ Europe/Moscow            # указываем переменную окружения и ее значение (альтернатива-парметр -e в docker run)
+
+CMD ["python", "app.py"]        # команда в консоли (выполняется в shell)
+
+
+
+
+
+
+еще пример dockerfile (для Go)
+
+FROM golang:1.17.1-alpine as bulder
+WORKDIR /build
+
+COPY . /build/                                  # перенос всего содержимого репозитория (кроме того, что в .gitignore) в папку build
+RUN CGO_ENABLED=0 GOOS=linux go build -a -o profile cmd/profile/main.go
+
+# generate clean, final image for end users
+FROM alpine:3.11.3
+COPY --from=builder /build/profile .            # скопировали exe-шник, конфиги и папку templates
+COPY --from=builder /build/configs/* /configs/
+RUN mkdir -p Stemplates
+
+# executable
+ENTRYPOINT ["./profile"]
+
+
+
+
+
+
+
+
+1 docker build -t <image_name> .                            # cоздание своего докер-образа: -t - tag, . - запуск из текущего каталога   
+2 docker images                                             # список созданных образов 
+3 docker run <image_name>                                   # преобразование образа в контейнер (запуск контейнера, имя контейнера будет определено автоматически)
+                                                            # docker run находит образ, создает контейнер поверх него и запускает контейнер
+
+docker run --name <container_name> <image_name>             # запуск контейнера с образа image_name (можно использовать чужие контейнеры:  
+            -d      # запуск контейнера в фоне                                                      # если в образах нет mongo, то в можно прописать в <image_name> mongo (для временной БД)
+            --rm    # удаление контейнера после завершение приложения
+            -p <local_port>:<container_port>
+            -e TZ=Europe/Moscow                             # установка переменной окружения
+            -v <local_path_to_folder>:<path_in_container>   # монтируем локальную директорию в контейнер (абс. путь на хост машине:абс. путь внутри докер конт.)
+            -v <volume_name>:<path_in_container>            # другой способ монтирования - использование volume
+
+docker volume ls                                            # список всех директорий, монтируемых к контейнеру. Аналог (-v), только директория создается докером неизвестно где и монтируется в контейнер
+docker volume create <volume_name>                          # создаем volume, неизвестно где (докер сам решает)
+
+docker ps                                                   # выводит список запущенных контейнеров на вашей хост-машине.
+        -a                                                  # показать список всех контейнеров, в т.ч. завершенных
+docker ps -a -q                                             # вывести id всех контейнеров
+docker rm <container_id | container_name>                   # удалить контейнер по имени/id
+docker rm $(docker ps -qa)                                  # удалить все контейнеры
+docker rmi <image_id | repository:tag>                      # удаление образа
+docker rmi $(docker images -q)                              # удаление всех образов
+docker stop <container_name>                                # остановка контейнера
+docker push <image_name>                                    # загрузка образа                                                 
+
+
+docker compose:
+надстройка над docker
+используется для одновременного управления несколькими контейнерами, входящими в состав приложения.
+
+docker-compose.yaml:
+version: "3"
+
+volumes:                                    # список volumes
+    mongodb_volume:
+
+services:                                   # список микросервисов
+    microservice1:      
+        build: folder1/                     # сборка из папки folder1 (там лежит Dockerfile)
+        restart: always                     # при перезагрузке виртуальной машины докер автоматически поднимет указанные контейнеры
+        environment: 
+            - TZ=Europe/Moscow
+            - Param1=Value1
+            - MONGO_DB_ADDR=mongodb         # для подключения к Монго
+    
+    mongodb:                                # к монге нет портов, но к ней могут подключиться микросервисы из этой сборки
+        image: mongo:latest
+        volumes:
+            - mongodb_volume:/data/db
+        restart: always
+
+    microservice2:
+        build: folder2/
+        restart: always
+        ports:                              # единственный порт для внешних подключений
+            -8080:8080
+
+
+
+docker compose up -d                        # запуск сервисов (-d в фоне)
+docker compose down                         # остановить 
+
+
+
+Инструкция по деплою:
+Деплоймент - некоторое описание вашего микросервиса: что нужно сделать с вашим контейнером, когда он придет в кубернетес (как разворачивать, 
+какие порты открывать). После деплоя запускается под. Для связки нескольких деплойментов нужно описать сервис. Кроме того, сервис можно создать,
+чтобы прокинуть ваш деплоймент во внешнюю сеть (?). Теперь поды нужно связать (сеть)
+
+1 Открываем в Gitlab ветку, из которой будем деплоить
+2 Проверяем конфиг для микросервисов (порты). 
+kubectl create ...
+Для этого выполняем команду kubectl get svc - получаем список запущенных сервисов (?), их имена и порты - чтобы микросервисы друг друга видели
+3 Проверяем gitlab-ci.yaml
+4 Проверяем docker file
+5 Делаем merge request develop-->main (поскольку в gitlab-ci.yaml прописан деплой из main)
+6 Теперь в CI/CD-->pipelines появятся описанные в gitlab-ci.yaml стейджи (stages), в том числе build и deploy 
+7 После прохождения стейджов все будет задеплоено
+
+проверка деплоя: 
+kubectl get pods
+
+
+Новая инструкция по деплою:
+1 Gitlab: закинуть рабочий код в develop
+2 Gitlab: закинуть рабочий из develop в main, убрать галку "удалить сливаемую верку"
+3 Gitlab: проверит возможность merge request. Нажать на кнопку Merge
+4 Gitlab: запустится пайплайн, по результатам появятся поды. Проверяем kubectl get pod 
+5 CMD: пробрасываем порты:
+        kubectl port-forward auth-6cdff48c55-bqflk 8100:8100
+
+для доступа к k8s бд Postgres необходимо перед подключением с клиента пробросить порты
+kubectl port-forward --namespace team24 svc/postgresql 29000:5432
+где 29000 - порт на локальной машине
+5432 - порт в контейнере k8s
+
+
+
+
+
+
+
+
+WSL 
+
+для работы с WSL в VS Code в терминале WSL нужно набрать "code ."
+в терминале WSL команда "explorer.exe ." запускает проводник винды в текущей директории ubuntu
