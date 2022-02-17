@@ -1,0 +1,157 @@
+Очередь сообщений
+
+    У нас есть несколько приложений, которые асинхронно общаются друг с другом с помощью платформо-независимых сообщений. 
+    Очередь сообщений улучшает масштабируемость и усиливает изолированность приложений. Им не нужно знать, где находятся 
+    другие приложения, сколько их и даже что они собой представляют. Однако все эти приложения должны использовать один 
+    язык обмена сообщениями, т. е. заранее определённый текстовый формат представления данных.
+
+    Очередь сообщений использует в качестве компонента инфраструктуры программный брокер сообщений (RabbitMQ, Beanstalkd, 
+    Kafka и т.д.). Для реализации связи между приложениями можно по-разному настроить очередь:
+        -Запрос/Ответ
+            Клиент шлёт в очередь сообщение, включая ссылку на «разговор» («conversation» reference). 
+            Сообщение приходит на специальный узел, который отвечает отправителю другим сообщением, где содержится ссылка 
+            на тот же разговор, так что получатель знает, на какой разговор ссылается сообщение, и может продолжать 
+            действовать. Это очень полезно для бизнес-процессов средней и большой продолжительности (цепочек событий, sagas).
+
+        -Публикация/Подписка
+            По спискам:
+                Очередь поддерживает списки опубликованных тем подписок (topics) и их подписчиков. 
+                Когда очередь получает сообщение для какой-то темы, то помещает его в соответствующий список. 
+                Сообщение сопоставляется с темой по типу сообщения или по заранее определённому набору критериев, включая 
+                и содержимое сообщения.
+            На основе вещания:
+                Когда очередь получает сообщение, она транслирует его всем узлам, прослушивающим очередь. Узлы должны сами 
+                фильтровать данные и обрабатывать только интересующие сообщения.
+
+    Все эти паттерны можно отнести к либо к pull- (polling), либо к push-подходу:
+        -В pull-сценарии клиент опрашивает очередь с определённой частотой. Клиент управляет своей нагрузкой, но при этом 
+        может возникнуть задержка: сообщение уже лежит в очереди, а клиент его ещё не обрабатывает, потому что не пришло 
+        время следующего опроса очереди.
+        -В push-сценарии очередь сразу же отдаёт клиентам сообщения по мере поступления. Задержки нет, но клиенты не 
+        управляют своей нагрузкой.
+
+
+    Достоинства
+        Независимость набора технологий, развёртывания и масштабируемости сервисов.
+        Стандартный, простой и надёжный канал связи (передача текста по HTTP через порт 80).
+        Оптимизированный обмен сообщениями.
+        Стабильная спецификация обмена сообщениями.
+        Изолированность контекстов домена (Domain contexts).
+        Простота подключения и отключения сервисов.
+        Асинхронность обмена сообщениями помогает управлять нагрузкой на систему.
+
+    Недостатки
+        Разные веб-сервисы тяжело интегрировать из-за различий в языках передачи сообщений. Например, два веб-сервиса, 
+            использующих разные JSON-представления одной и той же концепции.
+
+
+
+
+
+
+
+
+
+
+
+
+Apache Kafka
+
+Установка (будет произведена в WSL):
+
+    1 Подготовить docker-compose.yaml-файл для развертывания Kafka и Zookeeper:
+            version: "2"
+
+            services:
+            zookeeper:                                          # Zookeeper - необходим для работы kafka (key-value хранилище)
+                image: docker.io/bitnami/zookeeper:latest
+                ports:
+                - "2181:2181"                                   # expose порт
+                volumes:
+                - "zookeeper_data:/bitnami"
+                environment:
+                - ALLOW_ANONYMOUS_LOGIN=yes                     # позволим подключаться без авторизации
+            kafka:
+                image: docker.io/bitnami/kafka:latest
+                ports:
+                - "9092:9092"                                   # expose порт ? зачем
+                - "9093:9093"                                   # expose порт
+                volumes:
+                - "kafka_data:/bitnami"
+                environment:
+                # Comma separated host:port pairs, each corresponding to a Zookeeper Server - ссылаемся на зукипер
+                - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+                # Allow to use the PLAINTEXT listener (instead of a secure one: SSL, SASL_SSL, or SASL_PLAIN (not that secure))
+                - ALLOW_PLAINTEXT_LISTENER=yes
+                # Client - internal listener, external - external listener -- 2 клиента: внутренний (для подключения из инфраструктуры, внутри кластера кафки) и внешний (для работы с хоста) относительно инфраструктуры
+                - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+                # What interfaces Kafka binds to - определяем, какие сокеты использует кафка (для внешних подключений - 9093)
+                - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093
+                # How clients can connect - какие адреса будут получать listenerы кафки (адрес внутри контейнера кафки kafka:9092), 9093-expose порт, поэтому он - для внешних клиентов
+                - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://127.0.0.1:9093
+                # Listener used for communications between brokers
+                - KAFKA_INTER_BROKER_LISTENER_NAME=CLIENT
+                depends_on:
+                - zookeeper
+
+            volumes:
+            zookeeper_data:
+                driver: local
+            kafka_data:
+                driver: local
+
+    либо взять docker-compose.yaml соответствии с инструкцией (с сайта образа кафки на докерхабе https://hub.docker.com/r/bitnami/kafka/) - не проверял.
+        curl -sSL https://raw.githubusercontent.com/bitnami/bitnami-docker-kafka/master/docker-compose.yml > docker-compose.yml
+
+
+
+    2 Сборка проекта по конфигурации docker-compose.yaml:
+        docker-compose up -d
+    3 Посмотрим логи (читаем в режиме реального времени), убедимся, что без ошибок:
+        docker-compose logs -f kafka
+        docker-compose logs -f zookeeper
+    4 Узнаем имена запущенных контейнеров:
+        docker-compose ps
+
+                        Name                      Command               State                          Ports
+        --------------------------------------------------------------------------------------------------------------------
+        producer_kafka_1       /opt/bitnami/scripts/kafka ...   Up      0.0.0.0:9092->9092/tcp, 0.0.0.0:9093->9093/tcp
+        producer_zookeeper_1   /opt/bitnami/scripts/zooke ...   Up      0.0.0.0:2181->2181/tcp, 2888/tcp, 3888/tcp, 8080/tcp
+
+
+
+
+
+Проверка работы Kafka:
+    1 Создадим топик `quickstart-events`:
+        в WSL консоли выполним (9092 - внутреннее обращение - из скрипта кафки)
+        ```bash
+        docker exec \
+            producer_kafka_1 kafka-topics.sh \
+            --create --topic quickstart-events --bootstrap-server :9092 \
+            --partitions 1 --replication-factor 1
+        ```
+
+    2 Запишем сообщения в этот топик. Для этого подключимся к контейнеру:
+
+        ```bash
+        docker exec -it producer_kafka_1 /bin/bash
+        ```
+
+    3 И выполним:
+
+        ```bash
+        kafka-console-producer.sh --topic quickstart-events --bootstrap-server localhost:9092
+        > First message
+        > Second message
+        ```
+
+        Ввод сообщений заканчивается нажатием `Ctrl-D`
+
+    4 Прочитаем сообщения:
+
+        ```bash
+        kafka-console-consumer.sh --topic quickstart-events --from-beginning --bootstrap-server localhost:9092
+        ```
+
+        Остановить консьюмер можно с помощью `Ctrl-C`
