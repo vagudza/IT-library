@@ -14,3 +14,19 @@ PROMETHEUS
     rate(metric[15s]) - вычисли, как изменялась метрика за последние 15 секунд
     sum(rate(metric[15s])) - сумма
     sum by(handler) (rate(metric[15s])) - сгруппируй по хендлеру
+
+
+
+Графана
+    CPU Usage 0-100%
+    sum(rate(container_cpu_usage_seconds_total{image!="", container_name!="", namespace="wbx-search-internal", pod_name=~"^brands-updater-.*$"}[5m])*100) / sum(kube_pod_container_resource_limits{namespace="wbx-search-internal", pod=~"^brands-updater-.*$", resource="cpu"})
+
+    Memory usage
+    avg(avg(container_memory_working_set_bytes{pod=~"^brands-updater-.*$", container!=""}) by (container_name, pod)/ on (container_name, pod)(avg (container_spec_memory_limit_bytes>0 ) by (container_name, pod))*100)
+
+    Количество МБ, выделенных в куче для объектов
+    (go_memstats_alloc_bytes{kubernetes_namespace="wbx-search-internal", kubernetes_pod_name=~"^brands-updater-.*$"}) / (1024*1024)
+
+    Последний запуск GC
+    go_memstats_last_gc_time_seconds{kubernetes_namespace="wbx-search-internal", kubernetes_pod_name=~"^brands-updater-.*$"}
+    

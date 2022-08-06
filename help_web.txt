@@ -40,3 +40,17 @@ Best Practices in GO
             Handler:      serveMux,
         }
         log.Println(srv.ListenAndServeTLS("", ""))
+
+    2 Обратить внимание на дефолтные параметры!
+        httpClient := &http.Client{
+            Transport: nil,             // если nil, то будет использоваться default транспорт с дефолтными параметрами 
+            CheckRedirect: nil,
+            Jar: nil, 
+        }
+
+        ...
+        DefaultMaxIdleConnsPerHost, например.
+    
+    3 Не использовать http.DefaultClient в продакшене
+    4 Всегда используйте контекст с ограничением по времени
+    5 Не читайте из io.Reader (или io.ReadCloser) более одного раза
