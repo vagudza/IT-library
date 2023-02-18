@@ -655,7 +655,7 @@ fmt.Println(result.RowsAffected())  // количество затронутых
                 a = append(a, 2)
                 a = append(a, 3)
                 add(a)                  // Вместимость слайса при передаче в функцию add равна 4 при длине 3.
-                fmt.Println(a)
+                fmt.Println(a)          // 1 2 3
             }
 
             func add(a []int) {
@@ -1837,10 +1837,55 @@ fmt.Println(result.RowsAffected())  // количество затронутых
         Name string
     }
 
-    // в метод передается копия типа. Метод не изменит оригинальной структуры, для которой вызван метод
+    // в метод передается копия типа. Метод не изменит оригинальной структуры, для которой вызван метод при присваивании полю некоторого значения.
     func (p Person) UpdateName(name string){
         p.Name = name
     }
+
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // однако если поле структуры - ссылочный тип (указатель, срез, мапа, канал, интерфейс) и в методе изменяются значения поля по указателю,
+    // то в таком случае после вызова метода в оригинальной структуре значение поля изменится: 
+
+    // пример:
+        type NamedParams struct {
+            Number int
+            OptionalNumber *int
+            Name   string
+            Params map[string]int
+            Bytes []byte
+            Something interface{}
+        }
+
+        func (s NamedParams) Clear() {
+            s.Number = -1                   // not changed after call Clear()
+            *s.OptionalNumber = -1          // chanded, because change value by pointer
+            s.Name = "no name"              // not changed after call Clear()
+
+            for k := range s.Params {
+                delete(s.Params, k)         // changed
+            }
+            
+            s.Bytes[0] = 'a'                // changed
+            s.Bytes = []byte{}              // not changed after call Clear()
+            s.Something = 42                // несмотря на ссылочный тип интерфейса, изменится значение в копии (s), однако 
+                                            // после вызова этого метода p.Something не изменится. Однако, если бы в интерфейсе 
+                                            // была бы map, и внутри Clear() значение существующего ключа было бы изменено, то 
+                                            // после вызова Clear() p.Something изменится !!!!!!!
+        }
+
+
+        func main() {
+            value := 5
+            p := NamedParams{Number: 5, OptionalNumber: &value, Name: "box", Params: map[string]int{"length":100, "width":200}, Bytes: []byte{'A','B','C'}, Something: "test"}
+
+            // 5 5 box 100 0 ABC test
+            fmt.Println(p.Number, *p.OptionalNumber, p.Name, p.Params["length"], p.Params["other"], string(p.Bytes), p.Something)
+
+            p.Clear()
+
+            // 5 -1 box 0 0 aBC test
+            fmt.Println(p.Number, *p.OptionalNumber, p.Name, p.Params["length"], p.Params["other"], string(p.Bytes), p.Something)
+        }
 
     //  в метод передается адрес на тип. Метод изменит оригинальной структуры, для которой вызван метод
     func (p *Person) SetName(name string){
