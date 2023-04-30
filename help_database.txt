@@ -1,0 +1,71 @@
+Индексы
+Уровни изоляции транзакций
+Аномалии (Postgres15 изнутри - книга)
+Составные индексы
+Explain
+
+
+Kafka
+Partitions,
+Consumer,
+Consumer group
+Producer
+Topic
+Commit, offset
+
+
+HTTP/http2
+REST API
+TCP UDP (гарантии доставки)
+
+Go
+(RW)Mutex, Race Conditions, deadlock
+AsyncMap - зачем?
+Type assetrion
+Сравнение интерфейса с nil
+Горутины/каналы
+Почему горутины легковесны 
+Сравнение горутин и системных тредов
+context switch
+Что такое стек/куча?
+Где аллоцируется стек?
+Как работает шедулер
+Что такое вытесняющие и кооперативная многозадачность
+Что такое мапа/слайс
+Что может быть ключем мапы
+Коллизии мапы
+len/cap слайсы, как слайс передается в функцию
+Внутреннее устройство garbage collector
+Вакуум в базах данных
+Что такое транзакция, сериализуемость?
+Postgres: линеарезуемость и сериализуемость?
+
+KISS DRY ...
+
+
+
+
+
+Транзакции:
+https://postgrespro.ru/education/books/internals
+
+Индексы:
+https://bookflow.ru/indeksy-v-mysql/
+
+Kafka:
+https://www.youtube.com/watch?v=j4bqyAMMb7o&list=PLa7VYi0yPIH0KbnJQcMv5N9iW8HkZHztH
+
+Вопрос по Golang на миллион долларов:
+https://www.youtube.com/watch?v=eOyxRI8FQm4
+
+Аксиомы каналов:
+https://dave.cheney.net/2014/03/19/channel-axioms
+
+Scheduling In Go:
+https://www.ardanlabs.com/blog/2018/08/scheduling-in-go-part1.html
+
+Как на самом деле устроен тип Map в Golang?
+https://www.youtube.com/watch?v=P_SXTUiA-9Y
+
+Навыки — менторская программа:
+https://www.youtube.com/@Skills_mentor/videos
