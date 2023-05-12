@@ -1616,6 +1616,24 @@ GOLANG
     }
 
 
+    // еще пример!
+    type X struct {
+        V int
+    }
+
+    func (x X) S() {
+        fmt.Println(x.V)
+    }
+
+    func main() {
+        x := X{123}
+        defer x.S()
+        x.V = 456
+    }
+
+    // Output 123, однако если ресивер был бы указателем,  func (x *X) S() {}, то вывелось 456
+
+
     func main() {
         defer fmt.Println("defer 1")
         defer fmt.Println(getSomeVars())    // !!! аргументы вложенных функций вычисляются при объявлении блока defer!!!
@@ -1629,6 +1647,18 @@ GOLANG
     return from getSomeVars                 // нижний defer - вывод результата функции getSomeVars
     defer 1                                 // верхний defer
 
+
+    еще пример: 
+    a := 10
+	defer func() { fmt.Println("call 0 ", a+10) }()
+	defer fmt.Println("call 1 ", a+10)
+	a++
+	fmt.Println("call 2 ", a)
+
+    // OUTPUT: 
+    call 2  11
+    call 1  20
+    call 0  21
 
     // порядок вызовов функций в объявлении defer (v.2)
     func main() {
@@ -1648,6 +1678,8 @@ GOLANG
 
     // panic() - встроенная функция, останавливающая выполнение программы
     // recover() - встроенная функция, возвращающая ошибку, которую бросила паника
+
+    Вызов recover() сработает, только если будет выполнен в блоке defer !!!!!!!!!!!!!!!!!!!!!!!!
 
     func deferTest() {
         defer func(){
@@ -4367,6 +4399,64 @@ GOLANG
     Если есть оператор по умолчанию, то выполняется оператор по умолчанию, и выполнение программы возобновится с оператора после оператора select.
     (!) Без оператора по умолчанию оператор select будет заблокирован до тех пор, пока не будет продолжено хотя бы одно взаимодействие.
 
+    При чтении из нескольких каналов с помощью одного select и нескольких кейсов (case) получение данных из канала будет в рандомном порядке. 
+    Однако, чтобы дать приоритет чтения из определенного канала, нужно:
+    select {
+        case <-ch1:
+            // приоритетная обработка данных из этого канала
+        default:
+            select{
+                case <-ch2:
+                    // если в канал ch1 пока ничего не пришло, выполнится default c еще одним select
+                default:
+                    // выходим из select, не заблокировавшись 
+            }
+    }
+
+    в примере выше можно обрабатывать данные в бесконечном цикле
+    for {
+        select {...}
+    }
+
+    однако, чтобы не "греть воздух" бесполезным бесконечным циклом, можно
+    for {
+        <-sigChan                       // в этот канал нужно записать struct{}{} перед записью данных в ch1 или ch2
+
+        select {
+            case <-ch1:
+                // some priority work
+            default:
+                select{
+                    case <-ch2:
+                        // some work
+                    default:
+                        // out from select
+                }
+            }
+        }
+    }
+
+    // вот так, например, можно работать с sigChan 
+    go func(ch int, sigChan chan struct{}) {
+        for i:=0; i<100; i++ {
+            sigChan <- struct{}{}
+            ch <- i
+        }
+    }
+
+    // и еще пример, который не будет блокировать цикл выше, если в sigChan пока нельзя записать значение:
+    go func(ch int, sigChan chan struct{}) {
+        for i:=0; i<100; i++ {
+             select {                                   // этот select не заблокирует цикл
+                case sigChan <- struct{}{}:        
+                default: 
+            }
+
+            ch <- i
+        }
+    }
+
+
 
 
     select под капотом:
@@ -4901,7 +4991,7 @@ GOLANG
                     wg.Wait()
 
         (!) Кроме того, добавление wg.Wait(1) - запрещено внутри горутины.
-        (!) wg - нужно передавать по указателю в горутины, т.к. wg - структура
+        (!) wg - нужно передавать по указателю в горутины, т.к. wg - структура !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         Еще пример:
             func startWorker(in int, wg *sync.WaitGroup) {
@@ -5008,7 +5098,10 @@ GOLANG
         }
 
 
-    // СОСТОЯНИЕ ГОНКИ (Data race). Ситуация гонки на примере конкурентной записи в map
+    // СОСТОЯНИЕ ГОНКИ (Data race) - конкурентность в борьбе за ячейку памяти
+                        Race condition - более абстрактное понятие (недетерминированно)
+    
+    Ситуация гонки на примере конкурентной записи в map
         map в Go — это конкурентно небезопасный тип данных,
         то есть обращаясь к нему из разных горутин, которые могут выполняться
         совершенно на разных процессорах, можно как раз словить это состояние гонки. 
@@ -5034,6 +5127,8 @@ GOLANG
         go run -race race_1.go
 
     WARNING: DATA RACE
+
+    Race Con
 
 
 
@@ -5599,11 +5694,14 @@ infoLog := log.New(f, "INFO\t", log.Ldate|log.Ltime)
             -Copy
                 func Copy(dst Writer, src Reader) (written int64, err error)
 
-                Функция Copy копирует данные из объекта src в объект dst,
-                используя для этого определенные в этих объектах 
-                функции Read и Write соответственно; 
-                Возвращает количество записанных байт и ошибку, 
-                если она встретилась в процессе записи.
+                Функция Copy копирует данные из объекта src в объект dst, используя для этого определенные в этих объектах 
+                функции Read и Write соответственно; возвращает количество записанных байт и ошибку, если она встретилась в процессе записи.
+
+                !!!!!!! важный момент:
+                var arr []int               // nil-слайс
+                source := []int{1,2,3}      // не-nil слайс
+                copy(arr, source)           // копируем в nil-слайс -> len(arr) == 0, поскольку arr нужно было инициализировать arr := make([]int, len(source))
+
             
             -ReadAll
                 func ReadAll(r Reader) ([]byte, error)
@@ -6565,6 +6663,139 @@ var jsonBytes []byte
 
 
 
+Выравнивание памяти https://vc.ru/u/1389654-machine-learning/603441-golang-napisanie-effektivnyh-dlya-pamyati-i-processora-go-struktur-optimizirovannyh-dlya-raboty-s-cp-2023
+    type Foo struct {}
+
+    func main() {
+        x := &Foo{}
+        y := Foo{}
+    
+        fmt.Println(unsafe.Sizeof(x)) // 8
+        fmt.Println(unsafe.Sizeof(y)) // 0
+    }    
+
+
+Type switch VS Type Assertion
+    - type switch - конструкция вида (switch v := i.(type) - обязательно: switch + interfaceVar.(type))
+        func do(i interface{}) {
+            switch v := i.(type) {
+            case int:
+                fmt.Printf("Twice %v is %v\n", v, v*2)
+            case string:
+                fmt.Printf("%q is %v bytes long\n", v, len(v))
+            default:
+                fmt.Printf("I don't know about type %T!\n", v)
+            }
+        }
+    - type assertion - приведение типов, например (только интерфейсный тип можем так приводить)
+        intVar, ok := interfaceVar.(int)
+        
+
+
+
+Сериализация - это процесс преобразования структурированных данных в последовательность байтов, которую можно сохранить или передать через сеть. 
+Обратный процесс, когда данные восстанавливаются из байтовой последовательности, называется десериализацией.
+
+Сериализация необходима для сохранения состояния объектов программы, чтобы его можно было восстановить в будущем, например, после перезапуска программы. 
+Также сериализация используется для передачи данных между приложениями или через сеть. Например, веб-сервер может сериализовать данные в JSON или XML формат 
+и отправить их клиенту через HTTP протокол.
+
+
+
+Как отсортировать массив структур по конкретному полю? Реализовать структуру, которая имплементирует sort.Interface
+package main
+
+import (
+	"fmt"
+	"sort"
+)
+
+type Person struct {
+	Name string
+	Age  int
+}
+
+func (p Person) String() string {
+	return fmt.Sprintf("%s: %d", p.Name, p.Age)
+}
+
+// ByAge implements sort.Interface for []Person based on
+// the Age field.
+type ByAge []Person
+
+func (a ByAge) Len() int           { return len(a) }
+func (a ByAge) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByAge) Less(i, j int) bool { return a[i].Age < a[j].Age }
+
+func main() {
+	people := []Person{
+		{"Bob", 31},
+		{"John", 42},
+		{"Michael", 17},
+		{"Jenny", 26},
+	}
+
+	fmt.Println(people)
+	// There are two ways to sort a slice. First, one can define
+	// a set of methods for the slice type, as with ByAge, and
+	// call sort.Sort. In this first example we use that technique.
+	sort.Sort(ByAge(people))
+	fmt.Println(people)
+
+	// The other way is to use sort.Slice with a custom Less
+	// function, which can be provided as a closure. In this
+	// case no methods are needed. (And if they exist, they
+	// are ignored.) Here we re-sort in reverse order: compare
+	// the closure with ByAge.Less.
+	sort.Slice(people, func(i, j int) bool {
+		return people[i].Age > people[j].Age
+	})
+	fmt.Println(people)
+
+}
+
+
+
+Когда вы определяете новый тип на основе существующего (не интерфейсного), тем самым вы создаёте объявление типа и не наследуете методы, 
+объявленные в существующем типе.
+
+Неправильно:
+import "sync"
+type myMutex sync.Mutex
+
+func main() {  
+    var mtx myMutex
+    mtx.Lock() // ошибка
+    mtx.Unlock() // ошибка
+}
+
+// Правильно:
+import "sync"
+
+type myLocker struct {  
+    sync.Mutex
+}
+
+func main() {  
+    var lock myLocker
+    lock.Lock() // ok
+    lock.Unlock() // ok
+}
+
+
+Объявления интерфейсных типов также сохраняют свои наборы методов.
+Правильно:
+import "sync"
+type myLocker sync.Locker
+
+func main() {  
+    var lock myLocker = new(sync.Mutex)
+    lock.Lock() // ok
+    lock.Unlock() // ok
+}
+
+
+
 
 
 
@@ -6644,3 +6875,24 @@ select {
 
 2) неочевидный момент - в случае закрытия одного из каналов код в строке - // обработка buf1, buf2
  будет выполнен
+
+
+3. Конвертация типов данных
+    waitSeconds := 10
+    time.Sleep(waitSeconds * time.Second)       // Cannot use 'waitSeconds * time.Second' (type int) as the type Duration
+    
+    Решение:
+    time.Sleep(time.Duration(waitSeconds) * time.Second)
+
+    В Golang константа time.Second имеет тип Duration, который, в свою очередь алиас для int64: type Duration int64
+    Почему тогда возникает ошибка 
+    var waitSeconds64 int64 = 10
+	time.Sleep(waitSeconds64 * time.Second)     // Cannot use 'waitSeconds * time.Second' (type int) as the type Duration
+
+    Хорошо, если нужно обязательно приводить типы, то почему в примере ниже этого не нужно делать?
+    var valuesToChart chartutil.Values = func()...          // переменная типа chartutil.Values, причем type Values map[string]interface{}
+    
+    есть функция, которая принимает параметр типа map[string]interface{}
+    func Install(vals map[string]interface{}) {}
+
+    и в Golang вполне законно вызвать функцию Install(valuesToChart) и это не приведет к ошибке!
